@@ -38,16 +38,16 @@ description: 为业务实体添加完整的缓存功能，生成符合三层架�
 
 ### 步骤 2：生成缓存模型类
 
-在 `View/` 目录下创建 `{Entity}Cache.cs`：
+在 `View/` 目录下创建 `{Entity}View.cs`：
 
 ```csharp
-// 模板：View/{Entity}Cache.cs
+// 模板：View/{Entity}View.cs
 namespace FutureCommunity.Cache.View
 {
     /// <summary>
     /// {实体中文名}缓存
     /// </summary>
-    public class {Entity}Cache
+    public class {Entity}View
     {
         /// <summary>
         /// 主键ID
@@ -66,7 +66,7 @@ namespace FutureCommunity.Cache.View
 
 **命名规则：**
 
-- 类名：`{Entity}Cache`（如 `UserCache`、`RoleCache`）
+- 类名：`{Entity}View`（如 `UserView`、`RoleView`）
 - 属性名：使用小写（遵循数据库命名）
 - 必须有 `id` 属性（如果需要字典访问）
 
@@ -80,12 +80,12 @@ namespace FutureCommunity.Cache.View
 /// <summary>
 /// 获取单个{实体}
 /// </summary>
-public async Task<{Entity}Cache> Get{Entity}({KeyType} id)
+public async Task<{Entity}View> Get{Entity}({KeyType} id)
 {
-    var dbcontext = new CacheViewDBContext(_dboption);
+    using var dbcontext = new CacheViewDBContext(_dboption);
     var sql = @"SELECT * FROM public.t_{entity} WHERE id = {0}";
     return await dbcontext.Database
-        .SqlQueryRaw<{Entity}Cache>(sql, id)
+        .SqlQueryRaw<{Entity}View>(sql, id)
         .AsNoTracking()
         .FirstOrDefaultAsync();
 }
@@ -93,12 +93,12 @@ public async Task<{Entity}Cache> Get{Entity}({KeyType} id)
 /// <summary>
 /// 获取{实体}字典
 /// </summary>
-public async Task<Dictionary<{KeyType}, {Entity}Cache>> Get{Entity}List()
+public async Task<Dictionary<{KeyType}, {Entity}View>> Get{Entity}List()
 {
-    var dbcontext = new CacheViewDBContext(_dboption);
+    using var dbcontext = new CacheViewDBContext(_dboption);
     var sql = @"SELECT * FROM public.t_{entity}";
     var list = await dbcontext.Database
-        .SqlQueryRaw<{Entity}Cache>(sql)
+        .SqlQueryRaw<{Entity}View>(sql)
         .AsNoTracking()
         .ToListAsync();
     return list.ToDictionary(f => f.id, f => f);
@@ -124,7 +124,7 @@ public async Task<Dictionary<{KeyType}, {Entity}Cache>> Get{Entity}List()
 /// <summary>
 /// 获取单个{实体}
 /// </summary>
-public async Task<{Entity}Cache> Get{Entity}Info({KeyType} id)
+public async Task<{Entity}View> Get{Entity}Info({KeyType} id)
 {
     string key = $"{entity}.{id}";
     return await GetSingle(key, () => reader.Get{Entity}(id), {TTL});
@@ -133,7 +133,7 @@ public async Task<{Entity}Cache> Get{Entity}Info({KeyType} id)
 /// <summary>
 /// 获取{实体}字典
 /// </summary>
-public async Task<Dictionary<{KeyType}, {Entity}Cache>> Get{Entity}Dic()
+public async Task<Dictionary<{KeyType}, {Entity}View>> Get{Entity}Dic()
 {
     var key = $"{entity}";
     return await GetSingle(key, reader.Get{Entity}List, {TTL});
@@ -142,7 +142,7 @@ public async Task<Dictionary<{KeyType}, {Entity}Cache>> Get{Entity}Dic()
 /// <summary>
 /// 批量获取{实体}
 /// </summary>
-public async Task<Dictionary<{KeyType}, {Entity}Cache>> Get{Entity}Info(List<{KeyType}> ids)
+public async Task<Dictionary<{KeyType}, {Entity}View>> Get{Entity}Info(List<{KeyType}> ids)
 {
     string key = "{entity}.";
     var dic = await GetMultiple(
@@ -152,13 +152,13 @@ public async Task<Dictionary<{KeyType}, {Entity}Cache>> Get{Entity}Info(List<{Ke
     );
     return dic.ToDictionary(f => {KeyTypeParse}(f.Key.Replace(key, "")), v => v.Value);
 
-    async Task<IDictionary<string, {Entity}Cache>> func(string[] keys)
+    async Task<IDictionary<string, {Entity}View>> func(string[] keys)
     {
         var ids = keys.Select(s => {KeyTypeParse}(s.Replace(key, ""))).ToList();
         var dbcontext = new CacheViewDBContext(viewDbOp);
-        var sql = @"SELECT * FROM public.t_{entity} WHERE id = ANY({0})";
+        var sql = @"SELECT * FROM public.t_{entity} WHERE id = ANY(@ids)";
         var list = await dbcontext.Database
-            .SqlQueryRaw<{Entity}Cache>(sql, ids)
+            .SqlQueryRaw<{Entity}View>(sql, new NpgsqlParameter("ids", ids))
             .AsNoTracking()
             .ToListAsync();
         return list.ToDictionary(f => $"{key}{f.id}");
@@ -211,7 +211,7 @@ public async Task Refresh{Entity}()
 /// <summary>
 /// 刷新特定{实体}（使用模型）
 /// </summary>
-public async Task Refresh{Entity}({Entity}Cache model)
+public async Task Refresh{Entity}({Entity}View model)
 {
     string key = $"{entity}.{model.id}";
     await AddOrUpdate(key, model, {TTL});
@@ -233,7 +233,7 @@ public async Task Refresh{Entity}({Entity}Cache model)
 
 ### 文件结构
 
-- [ ] 在 `View/` 创建了 `{Entity}Cache.cs`
+- [ ] 在 `View/` 创建了 `{Entity}View.cs`
 - [ ] 在 `RedisHandler.cs` 添加了查询方法
 - [ ] 在 `CacheManager.cs` 添加了 Reader 和 Refresh 方法
 - [ ] 在 `ICacheReader.cs` 添加了接口定义
@@ -283,25 +283,25 @@ public class DepartmentService
     private readonly ICacheRefresh _cacheRefresh;
 
     // 获取单个部门
-    public async Task<DepartmentCache> GetDepartment(long id)
+    public async Task<DepartmentView> GetDepartment(long id)
     {
         return await _cacheReader.GetDepartmentInfo(id);
     }
 
     // 获取所有部门字典
-    public async Task<Dictionary<long, DepartmentCache>> GetAllDepartments()
+    public async Task<Dictionary<long, DepartmentView>> GetAllDepartments()
     {
         return await _cacheReader.GetDepartmentDic();
     }
 
     // 批量获取部门
-    public async Task<Dictionary<long, DepartmentCache>> GetDepartments(List<long> ids)
+    public async Task<Dictionary<long, DepartmentView>> GetDepartments(List<long> ids)
     {
         return await _cacheReader.GetDepartmentInfo(ids);
     }
 
     // 更新部门
-    public async Task UpdateDepartment(DepartmentCache dept)
+    public async Task UpdateDepartment(DepartmentView dept)
     {
         // 1. 更新数据库
         await _dbcontext.SaveChangesAsync();
@@ -332,7 +332,7 @@ public class DepartmentService
 1. **命名规范**
 
    - 缓存键必须小写，使用点号分隔
-   - 类名以 `Cache` 结尾
+   - 类名以 `View` 结尾
    - 属性名使用小写（与数据库一致）
 2. **性能规范**
 

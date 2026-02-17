@@ -2,23 +2,6 @@
 
 > ⚠️ **强制要求**：在编写本服务 spec.md 之前，必须先完整阅读 `skills/` 目录下的相关技能文档，并严格遵循其中的最佳实践和指导原则。
 
-## 📚 适用的技能文档清单
-
-在编写本服务规格说明书时，已阅读并遵循以下技能文档：
-
-### 按工作流程顺序（强制阅读）
-
-- [ ] `dotnet-architect/SKILL.md` ⭐⭐⭐ - .NET 架构设计和代码审查（需求分析、技术选型、架构决策）
-- [ ] `net-microservice-generator/SKILL.md` ⭐⭐⭐ - .NET 微服务项目架构和生成规范（项目框架生成）
-- [ ] `net-api-efcore-developer/SKILL.md` ⭐⭐⭐ - .NET API 和 EF Core 开发规范（API 和数据库开发）
-
-### 特定功能开发（按需阅读）
-
-- [ ] `net-database-bulkcopy/SKILL.md` ⭐⭐ - PostgreSQL 批量数据操作规范（大数据量导入/更新/同步场景）
-- [ ] `net-background-job/SKILL.md` ⭐⭐ - 后台循环任务开发规范（定时任务、数据同步等场景）
-
----
-
 ## 📋 业务与功能
 
 ### 1.1 服务概述
@@ -64,71 +47,20 @@
 
 > ⚠️ **重要**：本节列出该服务的所有 Controller 及其功能描述。每次新增、修改或删除 Controller 时都必须更新本节内容。
 
-#### [Controller1 名称]
-
-**Controller 名称**：`[Controller1Name]Controller`
-
-**路由前缀**：`api/[module]/[resource]`
-
-**功能描述**：
-
-- [功能1]
-- [功能2]
-- [功能3]
-
-**认证方式**：
-
-- [ ] `Bearer Token` (Policy: "Logon")
-- [ ] `Basic Auth` (Policy: "Basic")
-- [ ] Bearer 和 Basic 都支持（不设置 Policy）
-- [ ] 无需认证
-  - 方式1：不设置 `[Authorize]`（需确保没有上级的 `[Authorize]`）
-  - 方式2：使用 `[AllowAnonymous]`（覆盖上级的 `[Authorize]`）
-
-**Swagger 配置**：
-
-- **GroupName**：`[group-name]`
-- **SwaggerTag**：`[中文描述]`
-
 **API 接口清单**：
 
-| 方法 | 路由 | 功能 | 优先级 | 认证 |
-| ---- | ---- | ---- | ------ | ---- |
-| POST | `/api/[module]/[resource]/xxx` | 创建资源、更新资源、删除资源 | P0 | ✅ |
-| GET | `/api/[module]/[resource]` | 获取资源 | P0 | ✅ |
+| 方法 | 路由                             | 功能                         | 优先级 | 认证 |
+| ---- | -------------------------------- | ---------------------------- | ------ | ---- |
+| POST | `/api/[module]/[resource]/create` | 创建资源 | P0     | ✅   |
+| POST | `/api/[module]/[resource]/update` | 更新资源 | P0     | ✅   |
+| POST | `/api/[module]/[resource]/delete` | 删除资源 | P0     | ✅   |
+| GET  | `/api/[module]/[resource]`     | 获取资源（查询、列表）      | P0     | ✅   |
 
-#### [Controller2 名称]
-
-**Controller 名称**：`[Controller2Name]Controller`
-
-**路由前缀**：`api/[module]/[resource]`
-
-**功能描述**：
-
-- [功能1]
-- [功能2]
-- [功能3]
-
-**认证方式**：
-
-- [ ] `Bearer Token` (Policy: "Logon")
-- [ ] `Basic Auth` (Policy: "Basic")
-- [ ] Bearer 和 Basic 都支持（不设置 Policy）
-- [ ] 无需认证
-  - 方式1：不设置 `[Authorize]`（需确保没有上级的 `[Authorize]`）
-  - 方式2：使用 `[AllowAnonymous]`（覆盖上级的 `[Authorize]`）
-
-**Swagger 配置**：
-
-- **GroupName**：`[group-name]`
-- **SwaggerTag**：`[中文描述]`
-
-**API 接口清单**：
-
-| 方法 | 路由 | 功能 | 优先级 | 认证 |
-| ---- | ---- | ---- | ------ | ---- |
-| POST | `/api/[module]/[resource]/xxx` | 创建资源、更新资源、删除资源 | P0 | ✅ |
-| GET | `/api/[module]/[resource]` | 获取资源 | P0 | ✅ |
+> ⚠️ **API 接口方法限制（强制）**：
+> - **仅允许使用 GET 和 POST 方法**
+> - **禁止使用 DELETE、PUT、PATCH 等其他 HTTP 方法**
+> - **原因**：项目网关会将 DELETE、PUT 等方法作为危险操作进行屏蔽
+> - 所有增删改操作统一使用 POST 方法，并在路由中明确操作类型
 
 ---
 
@@ -149,66 +81,25 @@
 > 数据访问模式和策略
 
 - **ORM**：Entity Framework Core (Code First)
-- **数据库**：PostgreSQL
+- **数据库**：~~Post~~greSQL
 - **连接管理**：连接池配置
-- **事务策略**：[说明]
-- **并发控制**：[乐观锁 / 悲观锁]
 
 ### 2.3 数据库字段配置规范
 
 > ⚠️ **必须遵循**：本项目严格遵循 Fluent API 配置规范，所有数据库配置通过 `IEntityTypeConfiguration<TEntity>` 接口实现。
+>
+> **详细规范**：请参考 `skills/net-efcore-developer/SKILL.md` 的"EF Core Code First 数据库规则"章节。
 
-**核心原则**：
+**核心原则概要**：
 
 1. **禁止使用数据注解**：实体模型类严禁使用任何数据注解标签（Data Annotations）
-   - ❌ `[Table]`、`[Column]`、`[Key]`、`[Required]`、`[MaxLength]`、`[Index]` 等
-   - ✅ 所有配置通过 Fluent API 在 `Configure` 方法中实现
-
 2. **命名规范**：
    - **实体类**：类名以 `Model` 结尾（如 `UserInfoModel`）
    - **数据库字段**：实体类属性统一使用小写字母（如 `id`、`user_name`、`create_time`）
    - **数据库表名**：表名添加 `t_` 前缀，使用小写下划线命名（如 `t_user_info`）
-
-3. **主键限制**：
-   - 主键 `id` 字段必须使用 `long` 类型，禁止使用 `int`
-
-4. **字符串长度配置**：
-   - **默认规则**：字符串类型默认**不需要配置** MaxLength，由数据库自动处理
-   - **特殊情况**：仅在业务明确要求限制长度时才配置 `HasMaxLength(n)`
-
-5. **实体关系**：
-   - 不创建外键关系，直接通过对应 id 字段关联即可
-
-**配置示例**：
-
-```csharp
-public class UserInfoConfiguration : IEntityTypeConfiguration<UserInfoModel>
-{
-    public void Configure(EntityTypeBuilder<UserInfoModel> builder)
-    {
-        // 配置表名和注释
-        builder.ToTable("t_user_info").HasComment("用户信息表");
-
-        // 配置主键
-        builder.HasKey(x => x.id);
-
-        // 配置属性（列名、注释、长度限制、是否必需等）
-        builder.Property(x => x.id).HasComment("主键ID");
-
-        builder.Property(x => x.user_name)
-            .IsRequired()  // 非空约束
-            .HasMaxLength(50)  // 仅在需要时配置长度
-            .HasComment("用户名");
-
-        builder.Property(x => x.create_time)
-            .HasDefaultValueSql("CURRENT_TIMESTAMP")
-            .HasComment("创建时间");
-
-        // 配置索引
-        builder.HasIndex(x => x.user_name).HasDatabaseName("idx_user_name");
-    }
-}
-```
+3. **主键限制**：主键 `id` 字段必须使用 `long` 类型，禁止使用 `int`
+4. **字符串长度配置**：字符串类型默认不需要配置 MaxLength
+5. **实体关系**：不创建外键关系，直接通过对应 id 字段关联
 
 ---
 
@@ -223,13 +114,14 @@ public class UserInfoConfiguration : IEntityTypeConfiguration<UserInfoModel>
 ```
 {ServiceName}.slnx
 ├── {ServiceName}.Api/            # 表示层
-│   ├── Controllers/              # 默认 Controllers 文件夹
-│   │   ├── XxxController.cs
-│   │   └── YyyController.cs
-│   ├── [Category1]Controllers/   # 分类 Controllers 文件夹（与 Controllers 平级）
-│   │   └── ZzzController.cs
-│   ├── [Category2]Controllers/   # 分类 Controllers 文件夹（与 Controllers 平级）
-│   │   └── AaaController.cs
+│   ├── Controllers/              # 所有 Controller 的根目录
+│   │   ├── Manager/              # 管理端 Controllers
+│   │   │   ├── XxxController.cs
+│   │   │   └── YyyController.cs
+│   │   ├── App/                  # 应用端 Controllers
+│   │   │   └── ZzzController.cs
+│   │   ├── Third/                # 第三方端 Controllers
+│   │   │   └── AaaController.cs
 │   ├── Program.cs
 │   └── appsettings.json
 └── {ServiceName}.Database/       # 数据层
@@ -240,14 +132,13 @@ public class UserInfoConfiguration : IEntityTypeConfiguration<UserInfoModel>
 
 **Controllers 目录组织说明**：
 
-- `Controllers/` 是默认文件夹，用于存放通用的 Controller
-- 其他分类的 Controllers 文件夹命名规则：`{分类}+Controllers`（如：WebControllers、MobileControllers、AdminControllers）
-- 所有 Controllers 文件夹（包括默认的和分类的）都与 Api 项目根目录平级
-- 常见分类方式：
-  - 按客户端类型：Controllers（默认）、WebControllers、MobileControllers、AdminControllers
-  - 按业务模块：Controllers（默认）、UserControllers、OrderControllers、ProductControllers
-  - 按功能类别：Controllers（默认）、QueryControllers、CommandControllers、ReportControllers
-- 选择合适的分类方式可以提高代码的可维护性和可读性
+- `Controllers/` 是所有 Controller 的根目录
+- **默认分类方式**：按调用端标识区分，无特殊说明时必须遵循以下分类
+
+  - **Manager**：管理端 Controllers（后台管理、运营管理等场景）
+  - **App**：应用端 Controllers（移动应用、Web 应用等用户端场景）
+  - **Third**：第三方端 Controllers（开放 API、合作伙伴集成等场景）
+- 所有分类文件夹都是 `controllers/` 的子目录
 
 ### 3.2 分层架构
 
@@ -362,17 +253,7 @@ public class UserInfoConfiguration : IEntityTypeConfiguration<UserInfoModel>
 
 ## 🧪 测试策略
 
-### 7.1 测试范围
-
-> 单元测试、集成测试、端到端测试
-
-- **单元测试**：[覆盖率和测试工具]
-- **集成测试**：[测试场景和工具]
-- **API 测试**：[Swagger UI / Postman]
-
-### 7.2 关键测试场景
-
-> 必须测试的业务场景
+必须测试的业务场景
 
 - [ ] [场景1]：[测试描述]
 - [ ] [场景2]：[测试描述]
@@ -386,11 +267,7 @@ public class UserInfoConfiguration : IEntityTypeConfiguration<UserInfoModel>
 
 > 环境变量和配置管理
 
-- **配置源**：appsettings.json / 环境变量
-- **环境清单**：
-  - **Development**：[开发环境配置]
-  - **Staging**：[预发布环境配置]
-  - **Production**：[生产环境配置]
+- **配置源**：appsettings.json
 
 ### 8.2 日志与监控
 

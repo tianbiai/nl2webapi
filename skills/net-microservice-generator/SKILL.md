@@ -1,6 +1,6 @@
 ---
 name: net-microservice-generator
-description: 生成.NET 10微服务API解决方案结构和代码骨架。当用户需要创建.NET微服务项目或需要标准化项目结构时调用。
+description: 生成.NET API解决方案结构和代码骨架。当用户需要创建.NET微服务项目或需要标准化项目结构时调用。
 ---
 # .NET 微服务解决方案生成器
 
@@ -117,14 +117,15 @@ projects/
 
 **项目框架生成完成后，在业务功能开发阶段：**
 
-1. **数据库实体开发**：使用 `net-api-efcore-developer` 技能创建数据库实体和 API 接口
-2. **缓存功能集成**：当业务实体需要缓存支持时，使用 `net-cache-use` 技能为该实体添加完整的缓存功能
+1. **API创建**：使用`net-api-developer` 技能创建API接口。
+2. **数据库实体开发**：使用 `net-efcore-developer` 技能创建数据库实体
+3. **缓存功能集成**：当业务实体需要缓存支持时，使用 `net-cache-use` 技能为该实体添加完整的缓存功能
 
    - 适用场景：字典数据、配置信息、高频查询数据等
    - 该技能会在 `Tools/{项目名}.Cache` 类库中生成缓存代码
    - 包含 View、RedisHandler、CacheManager 等完整实现
-3. **后台任务开发**：如需定时任务或数据同步，使用 `net-background-job` 技能
-4. **批量数据操作**：如需大数据量导入或同步，使用 `net-database-bulkcopy` 技能
+4. **后台任务开发**：如需定时任务或数据同步，使用 `net-background-job` 技能
+5. **批量数据操作**：如需大数据量导入或同步，使用 `net-database-bulkcopy` 技能
 
 ## 输出要求
 

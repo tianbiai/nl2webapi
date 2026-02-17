@@ -1,34 +1,45 @@
 ---
 name: net-database-bulkcopy
-description: 指导智能体如何在.net项目使用 PostgresqlAsyncBulk 类进行高效的 PostgreSQL 数据库批量插入、更新、合并及同步操作。
+description: 在.net项目使用 PostgresqlAsyncBulk 类进行高效的 PostgreSQL 数据库批量插入、更新、合并及同步操作。
 ---
-
 # PostgreSQL 批量操作类使用指南 (`PostgresqlAsyncBulk`)
+
 ## 概述
+
 `PostgresqlAsyncBulk` 是一个用于.net针对PostgreSQL数据库的高性能批量操作类。基于 Npgsql 的 `COPY` 命令实现，支持二进制格式导入，提供高效的数据插入、更新、合并及同步功能。
 **命名空间**: `ThirdNet.Core.Common`
 **核心接口**: `IDbAsyncBulk`
----
+
 ## 初始化
+
 ### 1. 依赖注入
+
 通过依赖注入进行初始化实例。
 
 ### 2. 初始化映射关系
+
 使用 `InitDefaultMappings<T>()` 方法自动初始化实体类与数据库表的映射关系。
+
 ```csharp
 Task InitDefaultMappings<T>()
 ```
+
 **功能**:
+
 - 使用反射自动扫描实体类型的属性
 - 默认数据库字段名为属性名小写
 - 自动推断数据库字段类型
 - 忽略标记了 `DbBulkAttribute` 且 `Ignore=true` 的属性
-**示例**:
+  **示例**:
+
 ```csharp
 await bulkCopy.InitDefaultMappings<User>();
 ```
+
 ### 3. 自定义映射
+
 也可以手动设置 `Mappings` 属性进行自定义映射：
+
 ```csharp
 bulkCopy.Mappings = new List<NpgMappingInfo>
 {
@@ -46,30 +57,41 @@ bulkCopy.Mappings = new List<NpgMappingInfo>
     }
 };
 ```
+
 ---
+
 ## 核心属性
+
 ### Mappings
+
 ```csharp
 public List<NpgMappingInfo> Mappings { get; set; }
 ```
+
 字段映射列表，包含对象属性名、数据库字段名和数据库类型的映射关系。
----
+
 ## 方法详解
+
 ### 1. CopyToServer - 批量添加
+
 将数据批量插入到数据库表中。
 **重载方法**:
+
 ```csharp
 // 方法1：使用连接字符串
 Task CopyToServer<T>(string connection_string, string targetTable, List<T> list)
 // 方法2：使用已打开的数据库连接
 Task CopyToServer<T>(DbConnection connection, string targetTable, List<T> list)
 ```
+
 **参数**:
+
 - `connection_string`: 数据库连接字符串（方法1）
 - `connection`: 已打开的数据库连接（方法2），若无后续操作不应复用该连接
 - `targetTable`: 目标表名
 - `list`: 待添加的数据列表
-**使用示例**:
+  **使用示例**:
+
 ```csharp
 var users = new List<User>
 {
@@ -79,14 +101,20 @@ var users = new List<User>
 await bulkCopy.InitDefaultMappings<User>();
 await bulkCopy.CopyToServer(connectionString, "users", users);
 ```
+
 **注意事项**:
+
 - 使用 PostgreSQL 的 `COPY FROM STDIN (FORMAT BINARY)` 命令
 - 数据按照映射配置的字段顺序导入
 - 适合大批量数据插入
+
 ---
+
 ### 2. CopyToServerWithoutUniqueKey - 条件插入
+
 批量插入数据，仅插入不存在的记录（基于指定字段判断），存在的记录不执行操作。适用于无唯一约束的场景。
 **重载方法**:
+
 ```csharp
 // 方法1：使用连接字符串
 Task CopyToServerWithoutUniqueKey<T>(string connection_string, List<string> where_keys, 
@@ -97,18 +125,22 @@ Task CopyToServerWithoutUniqueKey<T>(DbConnection connection, List<string> where
     string targetTable, List<T> list, string tempTable = null, 
     List<string> insertmapping = null, string where_extend_sql = null)
 ```
+
 **参数**:
+
 - `where_keys`: 用于判断是否存在的字段列表（如主键或业务唯一键）
 - `targetTable`: 目标表名
 - `list`: 待添加的数据列表
 - `tempTable`: 临时表名（可选，默认为 `targetTable + "_temp"`）
 - `insertmapping`: 指定要插入的字段（可选，默认使用所有映射字段）
 - `where_extend_sql`: 扩展 WHERE 条件（可选）
-**执行流程**:
+  **执行流程**:
+
 1. 创建临时表（结构与目标表相同）
 2. 将数据导入临时表
 3. 从临时表插入不存在的记录到目标表
-**使用示例**:
+   **使用示例**:
+
 ```csharp
 var users = new List<User>
 {
@@ -148,10 +180,14 @@ await bulkCopy.CopyToServerWithoutUniqueKey(
     where_extend_sql: "age > 20"
 );
 ```
+
 ---
+
 ### 3. MergeToServer - 合并（存在则更新，不存在则插入）
+
 根据指定的键字段，对数据进行合并操作。如果数据存在则更新，不存在则插入。
 **重载方法**:
+
 ```csharp
 // 方法1：使用连接字符串
 Task MergeToServer<T>(string connection_string, List<string> keys, string targetTable, 
@@ -162,7 +198,9 @@ Task MergeToServer<T>(DbConnection connection, List<string> keys, string targetT
     List<T> list, string tempTable = null, List<string> insertmapping = null, 
     List<string> updatemapping = null, string update_extend_sql = null)
 ```
+
 **参数**:
+
 - `keys`: 用于匹配的字段列表（需要是主键或唯一约束字段）
 - `targetTable`: 目标表名
 - `list`: 待导入的数据列表
@@ -170,11 +208,13 @@ Task MergeToServer<T>(DbConnection connection, List<string> keys, string targetT
 - `insertmapping`: 指定插入的字段（可选，用于避免插入自增列）
 - `updatemapping`: 指定更新的字段（可选，默认使用所有映射字段）
 - `update_extend_sql`: 自定义更新语句（可选，如 `"count=count+EXCLUDED.count"`）
-**执行流程**:
+  **执行流程**:
+
 1. 创建临时表
 2. 将数据导入临时表
 3. 使用 `ON CONFLICT` 语句合并到目标表
-**使用示例**:
+   **使用示例**:
+
 ```csharp
 var users = new List<User>
 {
@@ -207,12 +247,18 @@ await bulkCopy.MergeToServer(
     update_extend_sql: "visit_count = visit_count + EXCLUDED.visit_count"
 );
 ```
+
 **注意事项**:
+
 - `keys` 参数指定的字段必须具有主键或唯一约束，否则可能导致错误
+
 ---
+
 ### 4. UpdateToServer - 批量更新
+
 批量更新数据库中已存在的记录。
 **重载方法**:
+
 ```csharp
 // 方法1：使用连接字符串
 Task UpdateToServer<T>(string connection_string, List<string> where_name, 
@@ -224,7 +270,9 @@ Task UpdateToServer<T>(DbConnection connection, List<string> where_name,
     string tempTable = null, bool createtemp = true, 
     string update_extend_sql = null, string where_extend_sql = null)
 ```
+
 **参数**:
+
 - `where_name`: 用于匹配的字段列表（WHERE 条件）
 - `update_name`: 需要更新的字段列表
 - `targetTable`: 目标表名
@@ -233,11 +281,13 @@ Task UpdateToServer<T>(DbConnection connection, List<string> where_name,
 - `createtemp`: 是否创建临时表（仅方法2，默认为 true）
 - `update_extend_sql`: 扩展 SET 语句（可选）
 - `where_extend_sql`: 扩展 WHERE 语句（可选）
-**执行流程**:
+  **执行流程**:
+
 1. 创建临时表
 2. 将数据导入临时表
 3. 根据匹配条件更新目标表
-**使用示例**:
+   **使用示例**:
+
 ```csharp
 var users = new List<User>
 {
@@ -278,10 +328,14 @@ await bulkCopy.UpdateToServer(connection, new List<string> { "id" },
 await bulkCopy.UpdateToServer(connection, new List<string> { "id" }, 
     new List<string> { "age" }, "users", users, "users_temp", createtemp: false);
 ```
+
 ---
+
 ### 5. MergeAndDeleteToServer - 合并并删除
+
 执行完整的同步操作：存在则更新，不存在则插入，源数据不存在但目标表存在的记录则删除。
 **重载方法**:
+
 ```csharp
 // 方法1：使用连接字符串（自动包含事务）
 Task MergeAndDeleteToServer<T>(string connection_string, List<string> keys, 
@@ -294,7 +348,9 @@ Task MergeAndDeleteToServer<T>(DbConnection connection, List<string> keys,
     List<string> insertmapping = null, List<string> updatemapping = null, 
     string update_extend_sql = null)
 ```
+
 **参数**:
+
 - `keys`: 用于匹配的字段列表（需要是主键或唯一约束字段）
 - `targetTable`: 目标表名
 - `list`: 待导入的数据列表
@@ -302,12 +358,14 @@ Task MergeAndDeleteToServer<T>(DbConnection connection, List<string> keys,
 - `insertmapping`: 指定插入的字段（可选）
 - `updatemapping`: 指定更新的字段（可选）
 - `update_extend_sql`: 自定义更新语句（可选）
-**执行流程**:
+  **执行流程**:
+
 1. 创建临时表
 2. 将数据导入临时表
 3. 删除目标表中存在但临时表不存在的记录
 4. 合并临时表数据到目标表
-**使用示例**:
+   **使用示例**:
+
 ```csharp
 var users = new List<User>
 {
@@ -356,21 +414,30 @@ using (var connection = new NpgsqlConnection(connectionString))
     }
 }
 ```
+
 **注意事项**:
+
 - 方法1 使用连接字符串时会自动包含事务
 - 方法2 使用数据库连接时不包含事务，需手动管理
 - `keys` 参数指定的字段必须具有主键或唯一约束
+
 ---
+
 ### 6. CreateTempTable - 创建临时表
+
 创建与目标表结构相同的临时表。
+
 ```csharp
 Task CreateTempTable(string tempTable, string targetTable, DbConnection connection)
 ```
+
 **参数**:
+
 - `tempTable`: 临时表名
 - `targetTable`: 目标表名（复制其结构）
 - `connection`: 数据库连接（需已打开）
-**使用示例**:
+  **使用示例**:
+
 ```csharp
 using (var connection = new NpgsqlConnection(connectionString))
 {
@@ -378,17 +445,24 @@ using (var connection = new NpgsqlConnection(connectionString))
     await bulkCopy.CreateTempTable("temp_users", "users", connection);
 }
 ```
+
 ---
+
 ## DbBulkAttribute 特性
+
 用于标记实体类的属性，控制批量操作行为。
+
 ### 属性
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Ignore` | `bool` | 是否忽略该字段。true 则不参与批量操作 |
-| `ColumnName` | `string` | 数据库列名。不设置则默认为属性名小写 |
-| `Type` | `NpgsqlDbType` | 数据库字段类型。默认为 `NpgsqlDbType.Text` |
-| `UnknownType` | `string` | 未知类型名称，设置则使用该类型对应的值 |
+
+| 属性            | 类型             | 说明                                         |
+| --------------- | ---------------- | -------------------------------------------- |
+| `Ignore`      | `bool`         | 是否忽略该字段。true 则不参与批量操作        |
+| `ColumnName`  | `string`       | 数据库列名。不设置则默认为属性名小写         |
+| `Type`        | `NpgsqlDbType` | 数据库字段类型。默认为 `NpgsqlDbType.Text` |
+| `UnknownType` | `string`       | 未知类型名称，设置则使用该类型对应的值       |
+
 ### 使用示例
+
 ```csharp
 using ThirdNet.Core.Common;
 using NpgsqlTypes;

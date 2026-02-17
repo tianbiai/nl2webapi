@@ -32,10 +32,11 @@
 
 1. **dotnet-architect** ⭐⭐⭐ - .NET 架构设计和代码审查（需求分析、技术选型、架构决策）
 2. **net-microservice-generator** ⭐⭐⭐ - .NET 微服务项目架构和生成规范（项目框架生成）
-3. **net-api-efcore-developer** ⭐⭐⭐ - 所有 .NET API 和 EF Core 开发的最高优先级规范（API 和数据库开发）
-4. **net-cache-use** ⭐⭐ - 缓存类库创建与使用规范（为业务实体添加缓存功能）
-5. **net-database-bulkcopy** ⭐⭐ - PostgreSQL 批量数据操作规范（大数据量导入/更新/同步场景）
-6. **net-background-job** ⭐⭐ - 后台循环任务开发规范（定时任务、数据同步等场景）
+3. **net-api-developer** ⭐⭐⭐ - .NET API 开发规范（Controller、DTO、服务注册等）
+4. **net-efcore-developer** ⭐⭐⭐ - EF Core 数据库开发规范（实体模型、Fluent API、数据库迁移等）
+5. **net-cache-use** ⭐⭐ - 缓存类库创建与使用规范（为业务实体添加缓存功能）
+6. **net-database-bulkcopy** ⭐⭐ - PostgreSQL 批量数据操作规范（大数据量导入/更新/同步场景）
+7. **net-background-job** ⭐⭐ - 后台循环任务开发规范（定时任务、数据同步等场景）
 
 ---
 
@@ -51,9 +52,34 @@
 
 **核心原则**：主动沟通，充分理解，避免误解
 
-### 需求确认清单
+### 📂 前端规格说明书优先模式
 
-使用 `AskUserQuestion` 工具确认以下要素：
+**⚠️ 重要条件**：若当前目录存在 `projects/web_specs/spec.md` 以及 `projects/web_specs/specs/` 文件夹，则启动**前端规格说明书驱动模式**：
+
+| 文件/目录                         | 说明                           | 用途                                   |
+| --------------------------------- | ------------------------------ | -------------------------------------- |
+| `projects/web_specs/spec.md`    | 项目前端开发的需求规格说明书   | 整体功能需求、技术栈、接口规范         |
+| `projects/web_specs/specs/*.md` | 前端各个页面的页面级规格说明书 | 各页面功能细节、API 调用需求、数据结构 |
+
+**工作流程**：
+
+```
+读取 projects/web_specs/spec.md → 读取 projects/web_specs/specs/*.md → 分析前端 API 需求 → 生成后端 API 项目
+```
+
+**关键要点**：
+
+1. **需求分析依据**：以 `projects/web_specs/spec.md` 和 `projects/web_specs/specs/*.md` 为主要需求来源
+2. **API 接口推导**：从前端页面的 API 调用需求反向推导后端接口设计
+3. **数据结构对齐**：确保后端返回的数据结构与前端页面规格要求一致
+4. **服务拆分决策**：根据前端功能模块划分后端微服务边界
+5. **spec.md 生成**：基于前端规格说明书生成对应服务的 `projects/项目名/{ServiceName}/spec.md`
+
+### 需求确认
+
+使用 `AskUserQuestion` 工具确认基础要素和架构要素（若一次交互无法确认全部需求，可进行多次交互）：
+
+#### 基础要素
 
 | 要素     | 说明             | 示例                                          |
 | -------- | ---------------- | --------------------------------------------- |
@@ -65,7 +91,7 @@
 | 接口需求 | 需要哪些 API     | POST /api/users/register、GET /api/users/{id} |
 | 认证方式 | API 认证方式     | Bearer Token、Basic Auth、无需认证            |
 
-### 🏗️ 架构要素确认（重点）
+#### 架构要素（重点）
 
 **⚠️ 重要**：微服务架构设计直接影响系统可扩展性和维护性，必须重点确认以下架构要素：
 
@@ -107,7 +133,7 @@
 
 ### 技术栈规范（不可变）
 
-**⚠️ 重要：必须严格遵守以下技术栈，严禁随意更改！**
+⚠️ **严格遵循**：必须使用以下技术栈，详细规范见各技能文档：
 
 **核心框架**：
 
@@ -119,44 +145,29 @@
 **项目模板**：
 
 - **Web API 服务**：使用 `ThirdNet.Core.WebApiService` 模板
-- **认证服务（包含了认证模块的Web API 服务）**：使用 `ThirdNet.Core.IdentityService` 模板
+- **认证服务**：使用 `ThirdNet.Core.IdentityService` 模板
 - **类库项目**：使用标准 `classlib` 模板
 
 ### 服务结构规范
 
-项目以projects作为根目录。
+项目以 projects 作为根目录。
 
-**项目标准目录结构**：
+**详细目录结构**：请参考 `skills/net-microservice-generator/SKILL.md` 的"标准目录结构"章节。
 
-projects/                           # 根目录
-└── 项目名/                         # 具体项目
-    ├── Tools/                      # 通用工具类库
-    │   ├── {项目名}.Common/
-    │   └── {项目名}.Cache/
-    ├── IdentityService/            # 认证服务
-    │   ├── spec.md                 # 服务级 spec.md（包含所有 Controller 功能描述）
-    │   ├── IdentityService.slnx
-    │   ├── IdentityService.Api/
-    │   │   ├── Controllers/                    # 默认 Controllers 文件夹
-    │   │   │   ├── XxxController.cs
-    │   │   │   └── YyyController.cs
-    │   │   ├── [Category1]Controllers/         # 分类 Controllers 文件夹（与 Controllers 平级）
-    │   │   │   └── ZzzController.cs
-    │   │   └── [Category2]Controllers/         # 分类 Controllers 文件夹（与 Controllers 平级）
-    │   │       └── AaaController.cs
-    │   └── IdentityService.Database/
-    └── {ServiceName}/              # 业务微服务
-        ├── spec.md                 # 服务级 spec.md（包含所有 Controller 功能描述）
-        ├── {ServiceName}.slnx
-        ├── {ServiceName}.Api/
-        │   ├── Controllers/                    # 默认 Controllers 文件夹
-        │   │   ├── XxxController.cs
-        │   │   └── YyyController.cs
-        │   ├── [Category1]Controllers/         # 分类 Controllers 文件夹（与 Controllers 平级）
-        │   │   └── ZzzController.cs
-        │   └── [Category2]Controllers/         # 分类 Controllers 文件夹（与 Controllers 平级）
-        │       └── AaaController.cs
-        └── {ServiceName}.Database/
+**核心要点**：
+
+- `Tools/` 目录存放通用工具类库（`{项目名}.Common`、`{项目名}.Cache`）
+- 每个服务包含 Api 和 Database 两个项目
+- 使用公司模板 `ThirdNet.Core.WebApiService` 或 `ThirdNet.Core.IdentityService`
+- 服务根目录必须包含 `spec.md`（服务级完整功能说明书）
+
+**命名规范**：
+
+- 所有目录使用 Pascal 命名（首字母大写）：`Controllers/`、`Manager/`、`App/`、`Third/`
+- Controllers 子目录按调用方分类：
+  - `Manager/`：管理端（后台管理、运营管理等场景）
+  - `App/`：应用端（移动应用、Web 应用等用户端场景）
+  - `Third/`：第三方端（开放 API、合作伙伴集成等场景）
 
 ### 需求变更管理（持续性流程）
 
@@ -270,7 +281,7 @@ projects/                           # 根目录
    ↓
 4️⃣ MVP 框架验证
    ↓
-5️⃣ 详细功能开发（遵循 net-api-efcore-developer）
+5️⃣ 详细功能开发（遵循 net-api-developer 和 net-efcore-developer）
    ↓
 6️⃣ 完整服务验证
    ↓
