@@ -36,83 +36,23 @@ description: 为业务实体添加完整的缓存功能，生成符合三层架�
 7. **是否需要嵌套结构**：是否需要树形结构或复杂关联
 8. **自定义查询条件**：是否需要 JOIN、WHERE 等复杂查询
 
-### 步骤 2：生成缓存模型类
+### 步骤 2：生成缓存视图模型类
 
-在 `View/` 目录下创建 `{Entity}View.cs`：
+**视图模型类的创建规范请参考 `net-efcore-developer` 技能的「12. 视图模型与原生 SQL 查询」章节。**
 
-```csharp
-// 模板：View/{Entity}View.cs
-namespace FutureCommunity.Cache.View
-{
-    /// <summary>
-    /// {实体中文名}缓存
-    /// </summary>
-    public class {Entity}View
-    {
-        /// <summary>
-        /// 主键ID
-        /// </summary>
-        public {KeyType} id { get; set; }
-
-        /// <summary>
-        /// {字段说明}
-        /// </summary>
-        public {FieldType} {field_name} { get; set; }
-
-        // ... 其他字段
-    }
-}
-```
-
-**命名规则：**
-
-- 类名：`{Entity}View`（如 `UserView`、`RoleView`）
-- 属性名：使用小写（遵循数据库命名）
-- 必须有 `id` 属性（如果需要字典访问）
+在 `View/` 目录下创建 `{Entity}View.cs`，遵循以下要点：
+- 类名以 `View` 结尾（如 `UserView`、`RoleView`）
+- 属性名使用小写（与数据库字段一致）
+- 必须包含 `id` 属性（用于字典访问）
 
 ### 步骤 3：实现 RedisHandler 查询方法
 
-在 `RedisHandler.cs` 中添加查询方法：
+**原生 SQL 查询规范请参考 `net-efcore-developer` 技能的「12. 视图模型与原生 SQL 查询」章节。**
 
-```csharp
-#region {实体中文名}相关
-
-/// <summary>
-/// 获取单个{实体}
-/// </summary>
-public async Task<{Entity}View> Get{Entity}({KeyType} id)
-{
-    using var dbcontext = new CacheViewDBContext(_dboption);
-    var sql = @"SELECT * FROM public.t_{entity} WHERE id = {0}";
-    return await dbcontext.Database
-        .SqlQueryRaw<{Entity}View>(sql, id)
-        .AsNoTracking()
-        .FirstOrDefaultAsync();
-}
-
-/// <summary>
-/// 获取{实体}字典
-/// </summary>
-public async Task<Dictionary<{KeyType}, {Entity}View>> Get{Entity}List()
-{
-    using var dbcontext = new CacheViewDBContext(_dboption);
-    var sql = @"SELECT * FROM public.t_{entity}";
-    var list = await dbcontext.Database
-        .SqlQueryRaw<{Entity}View>(sql)
-        .AsNoTracking()
-        .ToListAsync();
-    return list.ToDictionary(f => f.id, f => f);
-}
-
-#endregion
-```
-
-**查询方式说明：**
-
+在 `RedisHandler.cs` 中添加查询方法，遵循以下要点：
 - 使用 `Database.SqlQueryRaw<T>()` 执行原生 SQL 查询
-- 使用 `{0}` 占位符传递参数，防止 SQL 注入
+- 使用参数化查询防止 SQL 注入
 - 所有查询必须使用 `AsNoTracking()` 以提高性能
-- 对于复杂查询（JOIN、WHERE 等），直接修改 SQL 语句即可
 
 ### 步骤 4：实现 CacheManager 读取方法
 
