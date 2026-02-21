@@ -26,8 +26,8 @@ description: 生成.NET API解决方案结构和代码骨架。当用户需要�
 
 ```bash
 dotnet new --debug:reinit
-dotnet new -i ThirdNet.Core.WebApiService --force
-dotnet new -i ThirdNet.Core.IdentityService --force
+dotnet new install ThirdNet.Core.WebApiService --force
+dotnet new install ThirdNet.Core.IdentityService --force
 ```
 
 ### 2. 工具类库
@@ -117,7 +117,7 @@ projects/
 
 **项目框架生成完成后，在业务功能开发阶段：**
 
-1. **API创建**：使用`net-api-developer` 技能创建API接口。
+1. **API创建**：使用 `net-api-developer` 技能创建API接口。
 2. **数据库实体开发**：使用 `net-efcore-developer` 技能创建数据库实体
 3. **缓存功能集成**：当业务实体需要缓存支持时，使用 `net-cache-use` 技能为该实体添加完整的缓存功能
 
